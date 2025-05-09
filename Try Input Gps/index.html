@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pilih Lokasi Otomatis & Manual</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+    />
+
+    <style>
+      #map {
+        height: 400px;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container my-4">
+      <h2>Pilih Lokasi (Otomatis, Klik, atau Cari)</h2>
+      <div id="map"></div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <label for="latitude1" class="form-label">Latitude Lokasi 1:</label>
+          <input type="text" id="latitude1" class="form-control" readonly />
+        </div>
+        <div class="col-md-6">
+          <label for="longitude1" class="form-label">Longitude Lokasi 1:</label>
+          <input type="text" id="longitude1" class="form-control" readonly />
+        </div>
+      </div>
+      <br />
+      <div class="row">
+        <div class="col-md-6">
+          <label for="latitude2" class="form-label">Latitude Lokasi 2:</label>
+          <input type="text" id="latitude2" class="form-control" readonly />
+        </div>
+        <div class="col-md-6">
+          <label for="longitude2" class="form-label">Longitude Lokasi 2:</label>
+          <input type="text" id="longitude2" class="form-control" readonly />
+        </div>
+      </div>
+
+      <br />
+      <div>
+        <label for="distance" class="form-label">Jarak:</label>
+        <input type="text" id="distance" class="form-control" readonly />
+      </div>
+      <br />
+      <form action="#" method="POST">
+        <button type="submit" class="btn btn-primary">Kirim</button>
+      </form>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+      let map = L.map("map").setView([-2.5489, 118.0149], 5);
+      let marker1, marker2, route;
+
+      // Tambahkan tile OSM
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Fungsi untuk update marker dan input
+      function updateMarker(lat, lng, marker, latitudeId, longitudeId) {
+        document.getElementById(latitudeId).value = lat.toFixed(6);
+        document.getElementById(longitudeId).value = lng.toFixed(6);
+
+        if (marker) {
+          marker.setLatLng([lat, lng]);
+        } else {
+          return L.marker([lat, lng]).addTo(map);
+        }
+      }
+
+      // Coba dapatkan lokasi pengguna
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            map.setView([lat, lng], 15);
+            marker1 = updateMarker(
+              lat,
+              lng,
+              marker1,
+              "latitude1",
+              "longitude1"
+            );
+          },
+          function (error) {
+            console.warn("Gagal deteksi lokasi pengguna:", error.message);
+          }
+        );
+      }
+
+      // Klik manual di peta
+      map.on("click", function (e) {
+        if (!marker1) {
+          marker1 = updateMarker(
+            e.latlng.lat,
+            e.latlng.lng,
+            marker1,
+            "latitude1",
+            "longitude1"
+          );
+        } else if (!marker2) {
+          marker2 = updateMarker(
+            e.latlng.lat,
+            e.latlng.lng,
+            marker2,
+            "latitude2",
+            "longitude2"
+          );
+          updateRoute();
+        }
+      });
+
+      // Tambahkan pencarian lokasi (Nominatim)
+      L.Control.geocoder({
+        geocoder: L.Control.Geocoder.nominatim(),
+        defaultMarkGeocode: false,
+      })
+        .on("markgeocode", function (e) {
+          const latlng = e.geocode.center;
+          map.setView(latlng, 15);
+          if (!marker1) {
+            marker1 = updateMarker(
+              latlng.lat,
+              latlng.lng,
+              marker1,
+              "latitude1",
+              "longitude1"
+            );
+          } else if (!marker2) {
+            marker2 = updateMarker(
+              latlng.lat,
+              latlng.lng,
+              marker2,
+              "latitude2",
+              "longitude2"
+            );
+            updateRoute();
+          }
+        })
+        .addTo(map);
+
+      // Menghitung jarak antara dua titik
+      function updateRoute() {
+        if (marker1 && marker2) {
+          const latlng1 = marker1.getLatLng();
+          const latlng2 = marker2.getLatLng();
+          const distance = latlng1.distanceTo(latlng2); // dalam meter
+
+          // Update jarak
+          document.getElementById("distance").value =
+            (distance / 1000).toFixed(2) +
+            " km (" +
+            distance.toFixed(0) +
+            " m)";
+
+          // Menampilkan jalur
+          if (route) {
+            map.removeControl(route);
+          }
+          route = L.Routing.control({
+            waypoints: [latlng1, latlng2],
+            routeWhileDragging: true,
+          }).addTo(map);
+        }
+      }
+    </script>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+  </body>
+</html>
