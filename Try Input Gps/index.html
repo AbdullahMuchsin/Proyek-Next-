@@ -32,25 +32,22 @@
 
       <div class="row mb-3">
         <div class="col-md-6">
-          <label for="selectLokasi1" class="form-label">Pilih Lokasi 1:</label>
-          <select id="selectLokasi1" class="form-select">
-            <option value="">-- Pilih Lokasi --</option>
-            <option value="jakarta">Jakarta</option>
-            <option value="bandung">Bandung</option>
-            <option value="surabaya">Surabaya</option>
-            <option value="jember">Jember</option>
-            <option value="malang">Malang</option>
-          </select>
+          <label for="inputLokasi1" class="form-label">Lokasi 1:</label>
+          <input
+            type="text"
+            id="inputLokasi1"
+            class="form-control"
+            placeholder="Masukkan nama lokasi pertama"
+          />
         </div>
         <div class="col-md-6">
-          <label for="selectLokasi2" class="form-label">Pilih Lokasi 2:</label>
-          <select id="selectLokasi2" class="form-select">
-            <option value="">-- Pilih Lokasi --</option>
-            <option value="jakarta">Jakarta</option>
-            <option value="bandung">Bandung</option>
-            <option value="rowotamtu">Rowotamtu</option>
-            <option value="malang">Malang</option>
-          </select>
+          <label for="inputLokasi2" class="form-label">Lokasi 2:</label>
+          <input
+            type="text"
+            id="inputLokasi2"
+            class="form-control"
+            placeholder="Masukkan nama lokasi kedua"
+          />
         </div>
       </div>
 
@@ -163,9 +160,9 @@
       }
 
       document
-        .getElementById("selectLokasi1")
-        .addEventListener("change", async function () {
-          const val = this.options[this.selectedIndex].text;
+        .getElementById("inputLokasi1")
+        .addEventListener("blur", async function () {
+          const val = this.value.trim();
           const coords = await getCoordinatesFromName(val);
           if (coords) {
             marker1 = updateMarker(
@@ -181,9 +178,9 @@
         });
 
       document
-        .getElementById("selectLokasi2")
-        .addEventListener("change", async function () {
-          const val = this.options[this.selectedIndex].text;
+        .getElementById("inputLokasi2")
+        .addEventListener("blur", async function () {
+          const val = this.value.trim();
           const coords = await getCoordinatesFromName(val);
           if (coords) {
             marker2 = updateMarker(
