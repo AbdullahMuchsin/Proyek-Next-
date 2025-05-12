@@ -3,22 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pilih Lokasi Otomatis & Manual</title>
+    <title>Pilih Lokasi via Dropdown</title>
 
     <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-
     <!-- Leaflet CSS -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
     />
 
     <style>
@@ -26,11 +21,39 @@
         height: 400px;
         margin-bottom: 1rem;
       }
+      .leaflet-routing-container {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
     <div class="container my-4">
-      <h2>Pilih Lokasi (Otomatis, Klik, atau Cari)</h2>
+      <h2>Pilih Lokasi dari Dropdown</h2>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="selectLokasi1" class="form-label">Pilih Lokasi 1:</label>
+          <select id="selectLokasi1" class="form-select">
+            <option value="">-- Pilih Lokasi --</option>
+            <option value="jakarta">Jakarta</option>
+            <option value="bandung">Bandung</option>
+            <option value="surabaya">Surabaya</option>
+            <option value="jember">Jember</option>
+            <option value="malang">Malang</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label for="selectLokasi2" class="form-label">Pilih Lokasi 2:</label>
+          <select id="selectLokasi2" class="form-select">
+            <option value="">-- Pilih Lokasi --</option>
+            <option value="jakarta">Jakarta</option>
+            <option value="bandung">Bandung</option>
+            <option value="rowotamtu">Rowotamtu</option>
+            <option value="malang">Malang</option>
+          </select>
+        </div>
+      </div>
+
       <div id="map"></div>
 
       <div class="row">
@@ -68,20 +91,31 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
     <script>
-      let map = L.map("map").setView([-2.5489, 118.0149], 5);
+      let map = L.map("map").setView([-6.2088, 106.8456], 6);
       let marker1, marker2, route;
 
-      // Tambahkan tile OSM
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
-        maxZoom: 19,
       }).addTo(map);
 
-      // Fungsi untuk update marker dan input
+      async function getCoordinatesFromName(name) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          name
+        )}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data && data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon),
+          };
+        }
+        return null;
+      }
+
       function updateMarker(lat, lng, marker, latitudeId, longitudeId) {
         document.getElementById(latitudeId).value = lat.toFixed(6);
         document.getElementById(longitudeId).value = lng.toFixed(6);
@@ -89,110 +123,83 @@
         if (marker) {
           marker.setLatLng([lat, lng]);
         } else {
-          return L.marker([lat, lng]).addTo(map);
+          marker = L.marker([lat, lng]).addTo(map);
         }
+
+        return marker;
       }
 
-      // Coba dapatkan lokasi pengguna
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function (position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            map.setView([lat, lng], 15);
-            marker1 = updateMarker(
-              lat,
-              lng,
-              marker1,
-              "latitude1",
-              "longitude1"
-            );
-          },
-          function (error) {
-            console.warn("Gagal deteksi lokasi pengguna:", error.message);
-          }
-        );
-      }
-
-      // Klik manual di peta
-      map.on("click", function (e) {
-        if (!marker1) {
-          marker1 = updateMarker(
-            e.latlng.lat,
-            e.latlng.lng,
-            marker1,
-            "latitude1",
-            "longitude1"
-          );
-        } else if (!marker2) {
-          marker2 = updateMarker(
-            e.latlng.lat,
-            e.latlng.lng,
-            marker2,
-            "latitude2",
-            "longitude2"
-          );
-          updateRoute();
-        }
-      });
-
-      // Tambahkan pencarian lokasi (Nominatim)
-      L.Control.geocoder({
-        geocoder: L.Control.Geocoder.nominatim(),
-        defaultMarkGeocode: false,
-      })
-        .on("markgeocode", function (e) {
-          const latlng = e.geocode.center;
-          map.setView(latlng, 15);
-          if (!marker1) {
-            marker1 = updateMarker(
-              latlng.lat,
-              latlng.lng,
-              marker1,
-              "latitude1",
-              "longitude1"
-            );
-          } else if (!marker2) {
-            marker2 = updateMarker(
-              latlng.lat,
-              latlng.lng,
-              marker2,
-              "latitude2",
-              "longitude2"
-            );
-            updateRoute();
-          }
-        })
-        .addTo(map);
-
-      // Menghitung jarak antara dua titik
       function updateRoute() {
         if (marker1 && marker2) {
           const latlng1 = marker1.getLatLng();
           const latlng2 = marker2.getLatLng();
-          const distance = latlng1.distanceTo(latlng2); // dalam meter
+          const distance = latlng1.distanceTo(latlng2);
 
-          // Update jarak
           document.getElementById("distance").value =
             (distance / 1000).toFixed(2) +
             " km (" +
             distance.toFixed(0) +
             " m)";
 
-          // Menampilkan jalur
           if (route) {
             map.removeControl(route);
           }
+
           route = L.Routing.control({
             waypoints: [latlng1, latlng2],
-            routeWhileDragging: true,
+            routeWhileDragging: false,
+            addWaypoints: false,
+            show: false,
+            createMarker: function () {
+              return null;
+            },
+            lineOptions: {
+              styles: [{ color: "blue", opacity: 0.7, weight: 5 }],
+            },
+            router: L.Routing.osrmv1({ profile: "car" }),
+            containerClassName: "d-none",
           }).addTo(map);
         }
       }
+
+      document
+        .getElementById("selectLokasi1")
+        .addEventListener("change", async function () {
+          const val = this.options[this.selectedIndex].text;
+          const coords = await getCoordinatesFromName(val);
+          if (coords) {
+            marker1 = updateMarker(
+              coords.lat,
+              coords.lng,
+              marker1,
+              "latitude1",
+              "longitude1"
+            );
+            map.setView([coords.lat, coords.lng], 10);
+            updateRoute();
+          }
+        });
+
+      document
+        .getElementById("selectLokasi2")
+        .addEventListener("change", async function () {
+          const val = this.options[this.selectedIndex].text;
+          const coords = await getCoordinatesFromName(val);
+          if (coords) {
+            marker2 = updateMarker(
+              coords.lat,
+              coords.lng,
+              marker2,
+              "latitude2",
+              "longitude2"
+            );
+            map.setView([coords.lat, coords.lng], 10);
+            updateRoute();
+          }
+        });
     </script>
 
-    <!-- Bootstrap JS (Optional) -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <!-- Bootstrap JS (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
