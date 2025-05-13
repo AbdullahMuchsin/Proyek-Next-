@@ -37,8 +37,9 @@
             type="text"
             id="inputLokasi1"
             class="form-control"
-            placeholder="Masukkan nama lokasi pertama"
+            placeholder="Contoh: Desa Sukamaju, Kecamatan X, Kabupaten Y, Provinsi Z"
           />
+          <small id="lokasi1-detail" class="text-muted"></small>
         </div>
         <div class="col-md-6">
           <label for="inputLokasi2" class="form-label">Lokasi 2:</label>
@@ -46,8 +47,9 @@
             type="text"
             id="inputLokasi2"
             class="form-control"
-            placeholder="Masukkan nama lokasi kedua"
+            placeholder="Contoh: Desa Sukamaju, Kecamatan X, Kabupaten Y, Provinsi Z"
           />
+          <small id="lokasi2-detail" class="text-muted"></small>
         </div>
       </div>
 
@@ -91,6 +93,18 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
     <script>
+      const itikIcon1 = L.icon({
+        iconUrl: "img/doll-icon.png",
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+      });
+
+      const itikIcon2 = L.icon({
+        iconUrl: "img/home-clinic-color-icon.png",
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+      });
+
       let map = L.map("map").setView([-6.2088, 106.8456], 6);
       let marker1, marker2, route;
 
@@ -99,7 +113,7 @@
       }).addTo(map);
 
       async function getCoordinatesFromName(name) {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(
           name
         )}`;
         const response = await fetch(url);
@@ -108,19 +122,20 @@
           return {
             lat: parseFloat(data[0].lat),
             lng: parseFloat(data[0].lon),
+            display_name: data[0].display_name,
           };
         }
         return null;
       }
 
-      function updateMarker(lat, lng, marker, latitudeId, longitudeId) {
+      function updateMarker(lat, lng, marker, latitudeId, longitudeId, icon) {
         document.getElementById(latitudeId).value = lat.toFixed(6);
         document.getElementById(longitudeId).value = lng.toFixed(6);
 
         if (marker) {
           marker.setLatLng([lat, lng]);
         } else {
-          marker = L.marker([lat, lng]).addTo(map);
+          marker = L.marker([lat, lng], { icon: icon }).addTo(map);
         }
 
         return marker;
@@ -170,8 +185,11 @@
               coords.lng,
               marker1,
               "latitude1",
-              "longitude1"
+              "longitude1",
+              itikIcon1
             );
+            document.getElementById("lokasi1-detail").textContent =
+              coords.display_name;
             map.setView([coords.lat, coords.lng], 10);
             updateRoute();
           }
@@ -188,8 +206,11 @@
               coords.lng,
               marker2,
               "latitude2",
-              "longitude2"
+              "longitude2",
+              itikIcon2
             );
+            document.getElementById("lokasi2-detail").textContent =
+              coords.display_name;
             map.setView([coords.lat, coords.lng], 10);
             updateRoute();
           }
