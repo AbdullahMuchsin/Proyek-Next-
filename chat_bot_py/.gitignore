@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
+.env
+
+# Hugging Face transformers
+*.bin
+*.h5
+*.pt
+*.ckpt
+*.pkl
+tokenizer_config.json
+special_tokens_map.json
+generation_config.json
+
+# Hugging Face cache (lokal model storage)
+~/.cache/huggingface/
+.cache/
+transformers_cache/
+
+# VS Code
+.vscode/
+
+# Mac / Linux / Windows junk
+.DS_Store
+Thumbs.db
